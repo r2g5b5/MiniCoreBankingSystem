@@ -10,6 +10,7 @@ import com.example.authservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,9 +24,12 @@ public class AuthenticationService {
     private final UserMapper userMapper;
 
     public AuthenticationResponseDTO register(RegisterRequestDTO requestDTO) {
+        userRepository.findByEmail(requestDTO.getEmail()).orElseThrow(() -> new UsernameNotFoundException("User Already exist"));
+        requestDTO.setPassword(passwordEncoder.encode(requestDTO.getPassword()));
         User user = userMapper.toEntity(requestDTO);
-        String token = jwtService.generateToken(user);
-        return AuthenticationResponseDTO.builder().token(token).build();
+        userRepository.save(user);
+        String jwtToken = jwtService.generateToken(user);
+        return AuthenticationResponseDTO.builder().token(jwtToken).build();
     }
 
     public AuthenticationResponseDTO authenticate(AuthenticateRequestDTO requestDTO) {
