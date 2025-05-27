@@ -32,7 +32,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
         final String jwtToken;
         final String username;
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (request.getRequestURI().startsWith("/api/v1/auth")
+                && request.getRequestURI().contains("register")) {
             filterChain.doFilter(request, response);
             return;
         }
