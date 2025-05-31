@@ -1,6 +1,10 @@
 package com.example.authservice.config;
 
+import com.example.authservice.exception.ExpiredJwtTokenException;
+import com.example.authservice.exception.InvalidJwtTokenException;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -16,10 +20,12 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+    private static final String SECRET_KEY = "dGhpc19pc19hX3NhZmVfYmFzZTY0X2VuY29kZWRfc2VjcmV0X2tleQ==";
 
-    public String extractUsername(String jwtToken) {
-        return extractClaim(jwtToken, Claims::getSubject);
+    private static final long EXPIRATION_MS = 1000 * 60 * 60 * 24;
+
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -27,18 +33,18 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    public String generateToken(Map<String, Object> extraClaims,
-                                UserDetails userDetails) {
-        return Jwts.builder().claims(extraClaims)
-                .subject(userDetails.getUsername())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 24))
-                .signWith(getSigningKey())
-                .compact();
-    }
-
     public String generateToken(UserDetails userDetails) {
         return generateToken(new HashMap<>(), userDetails);
+    }
+
+    public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+        return Jwts.builder()
+                .claims(extraClaims)
+                .subject(userDetails.getUsername())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
+                .signWith(getSigningKey())
+                .compact();
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
@@ -55,17 +61,21 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-
+        try {
+            return Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (ExpiredJwtException e) {
+            throw new ExpiredJwtTokenException("JWT token has expired");
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new InvalidJwtTokenException("Invalid JWT token");
+        }
     }
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
         return Keys.hmacShaKeyFor(keyBytes);
     }
-
 }

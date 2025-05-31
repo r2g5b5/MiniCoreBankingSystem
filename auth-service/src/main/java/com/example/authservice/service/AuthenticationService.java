@@ -5,12 +5,14 @@ import com.example.authservice.dto.AuthenticateRequestDTO;
 import com.example.authservice.dto.AuthenticationResponseDTO;
 import com.example.authservice.dto.RegisterRequestDTO;
 import com.example.authservice.entity.User;
+import com.example.authservice.exception.EmailAlreadyExistsException;
+import com.example.authservice.exception.UserNotFoundException;
 import com.example.authservice.mapper.UserMapper;
 import com.example.authservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +26,9 @@ public class AuthenticationService {
     private final UserMapper userMapper;
 
     public AuthenticationResponseDTO register(RegisterRequestDTO requestDTO) {
-        userRepository.findByEmail(requestDTO.getEmail()).orElseThrow(() -> new UsernameNotFoundException("User Already exist"));
+        if (userRepository.findByEmail(requestDTO.getEmail()).isPresent()) {
+            throw new EmailAlreadyExistsException("User already exists with email: " + requestDTO.getEmail());
+        }
         requestDTO.setPassword(passwordEncoder.encode(requestDTO.getPassword()));
         User user = userMapper.toEntity(requestDTO);
         userRepository.save(user);
@@ -33,13 +37,16 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponseDTO authenticate(AuthenticateRequestDTO requestDTO) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(requestDTO.getEmail(), requestDTO.getPassword()));
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(requestDTO.getEmail(), requestDTO.getPassword()));
+        } catch (BadCredentialsException ex) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
+        User user = userRepository.findByEmail(requestDTO.getEmail())
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + requestDTO.getEmail()));
 
-        User user = userRepository.findByEmail(requestDTO.getEmail()).orElseThrow();
         String jwtToken = jwtService.generateToken(user);
-        return AuthenticationResponseDTO.builder()
-                .token(jwtToken)
-                .build();
+        return AuthenticationResponseDTO.builder().token(jwtToken).build();
     }
 }

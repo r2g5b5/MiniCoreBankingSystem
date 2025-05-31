@@ -1,6 +1,7 @@
 package com.example.authservice.mapper;
 
 import com.example.authservice.dto.RegisterRequestDTO;
+import com.example.authservice.entity.Role;
 import com.example.authservice.entity.User;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,7 @@ public class UserMapper {
                 .lastName(registerRequestDTO.getLastName())
                 .email(registerRequestDTO.getEmail())
                 .password(registerRequestDTO.getPassword())
+                .role(Role.USER)
                 .build();
     }
 }
