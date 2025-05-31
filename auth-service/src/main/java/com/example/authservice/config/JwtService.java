@@ -38,13 +38,7 @@ public class JwtService {
     }
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
-        return Jwts.builder()
-                .claims(extraClaims)
-                .subject(userDetails.getUsername())
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
-                .signWith(getSigningKey())
-                .compact();
+        return Jwts.builder().claims(extraClaims).subject(userDetails.getUsername()).issuedAt(new Date()).expiration(new Date(System.currentTimeMillis() + EXPIRATION_MS)).signWith(getSigningKey()).compact();
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
@@ -62,11 +56,7 @@ public class JwtService {
 
     private Claims extractAllClaims(String token) {
         try {
-            return Jwts.parser()
-                    .verifyWith(getSigningKey())
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
+            return Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
         } catch (ExpiredJwtException e) {
             throw new ExpiredJwtTokenException("JWT token has expired");
         } catch (JwtException | IllegalArgumentException e) {
