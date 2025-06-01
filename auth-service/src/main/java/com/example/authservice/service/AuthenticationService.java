@@ -1,6 +1,5 @@
 package com.example.authservice.service;
 
-import com.example.authservice.config.JwtService;
 import com.example.authservice.dto.AuthenticateRequestDTO;
 import com.example.authservice.dto.AuthenticationResponseDTO;
 import com.example.authservice.dto.RegisterRequestDTO;
@@ -9,6 +8,7 @@ import com.example.authservice.exception.EmailAlreadyExistsException;
 import com.example.authservice.exception.UserNotFoundException;
 import com.example.authservice.mapper.UserMapper;
 import com.example.authservice.repository.UserRepository;
+import com.example.jwtlib.JwtService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,6 +16,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -33,14 +35,11 @@ public class AuthenticationService {
             throw new EmailAlreadyExistsException("User already exists with email: " + requestDTO.getEmail());
         }
 
-        // Map DTO to Entity
         User user = userMapper.toEntity(requestDTO);
-        // Encode password on entity, not modifying DTO
         user.setPassword(passwordEncoder.encode(requestDTO.getPassword()));
-
         userRepository.save(user);
 
-        String jwtToken = jwtService.generateToken(user);
+        String jwtToken = jwtService.generateToken(Map.of(), user);
         return AuthenticationResponseDTO.builder().token(jwtToken).build();
     }
 
@@ -56,7 +55,7 @@ public class AuthenticationService {
         User user = userRepository.findByEmail(requestDTO.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + requestDTO.getEmail()));
 
-        String jwtToken = jwtService.generateToken(user);
+        String jwtToken = jwtService.generateToken(Map.of(), user);
         return AuthenticationResponseDTO.builder().token(jwtToken).build();
     }
 }
