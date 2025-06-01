@@ -1,39 +1,48 @@
 package com.example.apigateway.filter;
 
-import com.example.apigateway.util.JwtUtil;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.authentication.ReactiveAuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import javax.crypto.SecretKey;
+
 @Component
-public class JwtAuthenticationFilter extends AuthenticationWebFilter {
+public class JwtAuthenticationFilter implements GatewayFilter {
 
-    private final JwtUtil jwtUtil;
-    private final ReactiveAuthenticationManager authenticationManager;
+    private static final String SECRET_KEY = "dGhpc19pc19hX3NhZmVfYmFzZTY0X2VuY29kZWRfc2VjcmV0X2tleQ==";
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil, ReactiveAuthenticationManager authenticationManager) {
-        super(authenticationManager);
-        this.jwtUtil = jwtUtil;
-        this.authenticationManager = authenticationManager;
-        this.setServerAuthenticationConverter(this::convert);
+    private SecretKey getSigningKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    private Mono<Authentication> convert(ServerWebExchange exchange) {
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return Mono.empty();
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
         }
+
         String token = authHeader.substring(7);
-        if (!jwtUtil.validateToken(token)) {
-            return Mono.empty();
+
+        try {
+            Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
+
+            return chain.filter(exchange);
+        } catch (JwtException e) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
         }
-        String username = jwtUtil.extractUsername(token);
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(username, token, null);
-        return Mono.just(auth);
     }
 }
+
