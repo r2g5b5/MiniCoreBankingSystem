@@ -22,8 +22,6 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    private final long EXPIRATION_MS = 1000 * 60 * 60 * 24;
-
     private final PrivateKey privateKey;
     private final PublicKey publicKey;
 
@@ -46,12 +44,13 @@ public class JwtService {
     }
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+        long EXPIRATION_MS = 1000 * 60 * 60 * 24;
         return Jwts.builder()
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
-                .signWith(privateKey, SignatureAlgorithm.RS256)
+                .signWith(privateKey, Jwts.SIG.RS256)
                 .compact();
     }
 
