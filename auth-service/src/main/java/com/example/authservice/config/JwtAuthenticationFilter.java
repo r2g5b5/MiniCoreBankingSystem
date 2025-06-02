@@ -2,7 +2,6 @@ package com.example.authservice.config;
 
 import com.example.authservice.exception.ExpiredJwtTokenException;
 import com.example.authservice.exception.InvalidJwtTokenException;
-import com.example.jwtlib.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

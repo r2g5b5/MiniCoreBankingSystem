@@ -1,5 +1,6 @@
 package com.example.authservice.service;
 
+import com.example.authservice.config.JwtService;
 import com.example.authservice.dto.AuthenticateRequestDTO;
 import com.example.authservice.dto.AuthenticationResponseDTO;
 import com.example.authservice.dto.RegisterRequestDTO;
@@ -8,7 +9,6 @@ import com.example.authservice.exception.EmailAlreadyExistsException;
 import com.example.authservice.exception.UserNotFoundException;
 import com.example.authservice.mapper.UserMapper;
 import com.example.authservice.repository.UserRepository;
-import com.example.jwtlib.JwtService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;

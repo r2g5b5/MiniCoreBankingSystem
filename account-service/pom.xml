@@ -88,12 +88,6 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>com.example</groupId>
-            <artifactId>jwt-lib</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-
-        <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
             <version>0.12.3</version>
