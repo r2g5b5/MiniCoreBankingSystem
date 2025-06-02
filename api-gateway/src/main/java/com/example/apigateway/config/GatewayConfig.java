@@ -17,11 +17,11 @@ public class GatewayConfig {
     public RouteLocator routes(RouteLocatorBuilder builder) {
         return builder.routes()
                 // Auth service routes - no JWT filter
-                .route("auth-service", r -> r.path("/api/v1/auth/**")
+                .route("auth-service", r -> r.path("/auth/**")
                         .uri("http://localhost:9091")) // your auth-service URL/port
 
                 // Account service routes - JWT filter applied
-                .route("account-service", r -> r.path("/api/v1/**")
+                .route("account-service", r -> r.path("/account/**")
                         .filters(f -> f.filter(jwtAuthenticationFilter))
                         .uri("http://localhost:9090")) // your account-service URL/port
 
